@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   deleteText: { fontSize: 18, color: '#ef4444' },
   fab: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 60,
     right: 20,
     backgroundColor: '#3b82f6',
     width: 56,
