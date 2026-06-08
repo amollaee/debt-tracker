@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+
 export default function PersonDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
   deleteText: { fontSize: 18, color: '#ef4444' },
   fab: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 30,
     right: 20,
     backgroundColor: '#3b82f6',
     width: 56,

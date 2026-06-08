@@ -7,6 +7,7 @@ import * as Sharing from 'expo-sharing';
 import { useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -16,67 +17,21 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const insets = useSafeAreaInsets();
 
 export default function PersonsScreen() {
   const { persons, addPerson, updatePerson, deletePerson, importData } = useData();
   const navigation = useNavigation();
-
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [backupModalVisible, setBackupModalVisible] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<any>(null);
   const [newName, setNewName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity onPress={() => setBackupModalVisible(true)} style={{ marginRight: 15 }}>
-          <Text style={{ fontSize: 22, color: '#fff' }}>⚙️</Text>
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
-
-  const exportData = async () => {
-    setLoading(true);
-    try {
-      const dataStr = JSON.stringify(persons, null, 2);
-      const fileName = `debt_backup_${Date.now()}.json`;
-      const filePath = FileSystem.documentDirectory + fileName;
-      await FileSystem.writeAsStringAsync(filePath, dataStr, { encoding: FileSystem.EncodingType.UTF8 });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(filePath);
-      } else {
-        alert('اشتراک‌گذاری در این دستگاه پشتیبانی نمی‌شود');
-      }
-    } catch (error) {
-      alert('خطا در ایجاد فایل پشتیبان');
-    } finally {
-      setLoading(false);
-      setBackupModalVisible(false);
-    }
-  };
-
-  const importFromFile = async () => {
-    alert('برای بازیابی، کتابخانه expo-document-picker نیاز است. در حال حاضر فقط خروجی گرفتن فعال است.');
-    setBackupModalVisible(false);
-  };
-
-  const calculateBalance = (transactions: any[]) => {
-    let debtor = 0, creditor = 0;
-    transactions.forEach(t => {
-      if (t.type === 'debtor') debtor += t.amount;
-      else creditor += t.amount;
-    });
-    return { debtor, creditor, balance: creditor - debtor };
-  };
-
-  const filteredPersons = persons.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const handleAddPerson = () => {
     if (!newName.trim()) return;
@@ -112,8 +67,83 @@ export default function PersonsScreen() {
     setDeleteModalVisible(true);
   };
 
+  // دکمه پشتیبان‌گیری در هدر
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={showBackupOptions} style={{ marginRight: 15 }}>
+          <Text style={{ fontSize: 22, color: '#fff' }}>⚙️</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
+  const showBackupOptions = () => {
+    Alert.alert('پشتیبان‌گیری', 'چه کاری می‌خواهید انجام دهید؟', [
+      { text: 'خروجی گرفتن (Export)', onPress: exportData },
+      { text: 'بازیابی از فایل (Import)', onPress: importFromFile },
+      { text: 'لغو', style: 'cancel' },
+    ]);
+  };
+
+  const exportData = async () => {
+    setLoading(true);
+    try {
+      const dataStr = JSON.stringify(persons, null, 2);
+      const fileName = `debt_backup_${Date.now()}.json`;
+      const filePath = FileSystem.documentDirectory + fileName;
+      await FileSystem.writeAsStringAsync(filePath, dataStr, { encoding: FileSystem.EncodingType.UTF8 });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(filePath);
+      } else {
+        Alert.alert('اشتراک‌گذاری در این دستگاه پشتیبانی نمی‌شود');
+      }
+    } catch (error) {
+      Alert.alert('خطا', 'امکان ایجاد فایل پشتیبان وجود ندارد');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const importFromFile = async () => {
+    // برای سادگی از expo-document-picker استفاده می‌کنیم.
+    // ابتدا نصب کتابخانه لازم است.
+    const { DocumentPicker } = require('expo-document-picker');
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
+      if (result.type === 'success') {
+        const fileContent = await FileSystem.readAsStringAsync(result.uri);
+        const importedData = JSON.parse(fileContent);
+        // اعتبارسنجی ساده
+        if (Array.isArray(importedData)) {
+          importData(importedData);
+          Alert.alert('موفق', 'داده‌ها با موفقیت بازیابی شدند');
+        } else {
+          Alert.alert('خطا', 'فرمت فایل نامعتبر است');
+        }
+      }
+    } catch (error) {
+      Alert.alert('خطا', 'امکان خواندن فایل وجود ندارد');
+    }
+  };
+
+  const filteredPersons = persons.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // محاسبه تراز
+  const calculateBalance = (transactions: any[]) => {
+    let debtor = 0, creditor = 0;
+    transactions.forEach(t => {
+      if (t.type === 'debtor') debtor += t.amount;
+      else creditor += t.amount;
+    });
+    return { debtor, creditor, balance: creditor - debtor };
+  };
+
   return (
     <View style={styles.container}>
+      {/* جستجو */}
       <TextInput
         style={styles.searchInput}
         placeholder="🔍 جستجوی نام شخص..."
@@ -153,64 +183,80 @@ export default function PersonsScreen() {
         ListEmptyComponent={<Text style={styles.emptyText}>هیچ شخصی یافت نشد</Text>}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => setAddModalVisible(true)}>
+      <TouchableOpacity style={[styles.fab, {bottom: insets.bottom + 20}]} onPress={() => setAddModalVisible(true)}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
 
+      {/* مودال افزودن و ویرایش و حذف (همان‌هایی که قبلاً داشتید) */}
+      {/* ... کد قبلی مودال‌ها را اینجا قرار دهید (برای اختصار تکرار نمی‌کنم) ... */}
       {/* مودال افزودن */}
       <Modal visible={addModalVisible} animationType="slide" transparent onRequestClose={() => setAddModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>➕ افزودن شخص جدید</Text>
-            <TextInput style={styles.input} placeholder="نام کامل" value={newName} onChangeText={setNewName} textAlign="right" />
+            <TextInput
+              style={styles.input}
+              placeholder="نام کامل"
+              value={newName}
+              onChangeText={setNewName}
+              textAlign="right"
+            />
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setAddModalVisible(false)}><Text style={styles.cancelText}>لغو</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleAddPerson}><Text style={styles.saveText}>افزودن</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setAddModalVisible(false)}>
+                <Text style={styles.cancelText}>لغو</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleAddPerson}>
+                <Text style={styles.saveText}>افزودن</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* مودال ویرایش */}
+      {/* مودال ویرایش شخص */}
       <Modal visible={editModalVisible} animationType="slide" transparent onRequestClose={() => setEditModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>✏️ ویرایش نام شخص</Text>
-            <TextInput style={styles.input} placeholder="نام جدید" value={newName} onChangeText={setNewName} textAlign="right" />
+            <TextInput
+              style={styles.input}
+              placeholder="نام جدید"
+              value={newName}
+              onChangeText={setNewName}
+              textAlign="right"
+            />
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}><Text style={styles.cancelText}>لغو</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleEditPerson}><Text style={styles.saveText}>ذخیره</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
+                <Text style={styles.cancelText}>لغو</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleEditPerson}>
+                <Text style={styles.saveText}>ذخیره</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* مودال حذف */}
+      {/* مودال حذف شخص */}
       <Modal visible={deleteModalVisible} animationType="fade" transparent onRequestClose={() => setDeleteModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>⚠️ حذف شخص</Text>
-            <Text style={styles.deleteConfirmText}>آیا از حذف «{selectedPerson?.name}» مطمئن هستید؟</Text>
+            <Text style={styles.deleteConfirmText}>
+              آیا از حذف «{selectedPerson?.name}» مطمئن هستید؟
+            </Text>
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setDeleteModalVisible(false)}><Text style={styles.cancelText}>لغو</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.deleteConfirmButton} onPress={handleDeletePerson}><Text style={styles.deleteConfirmButtonText}>حذف</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setDeleteModalVisible(false)}>
+                <Text style={styles.cancelText}>لغو</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteConfirmButton} onPress={handleDeletePerson}>
+                <Text style={styles.deleteConfirmButtonText}>حذف</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* مودال پشتیبان‌گیری */}
-      <Modal visible={backupModalVisible} animationType="fade" transparent onRequestClose={() => setBackupModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>⚙️ پشتیبان‌گیری</Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.saveButton} onPress={exportData}><Text style={styles.saveText}>خروجی گرفتن (Export)</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setBackupModalVisible(false)}><Text style={styles.cancelText}>لغو</Text></TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {loading && (
         <View style={styles.loadingOverlay}>
@@ -222,29 +268,19 @@ export default function PersonsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  container: { flex: 1, backgroundColor: '#f8f9fa', padding: 12 },
+  listContent:{writingDirection:'rtl'},
   searchInput: {
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: 12,
     padding: 10,
-    margin: 12,
+    marginBottom: 12,
     fontSize: 16,
     textAlign: 'right',
   },
-  listContent: { paddingBottom: 80 },
-  personCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 12,
-    marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 1,
-  },
+  personCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', elevation: 1 },
   personInfo: { flex: 1 },
   personName: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', textAlign: 'right', marginBottom: 6 },
   personStats: { fontSize: 13, color: '#334155', textAlign: 'right', marginBottom: 4 },
@@ -253,18 +289,7 @@ const styles = StyleSheet.create({
   deleteIcon: { fontSize: 20, color: '#ef4444' },
   positive: { color: '#10b981' },
   negative: { color: '#ef4444' },
-  fab: {
-    position: 'absolute',
-    bottom: 30,   // فاصله ثابت از پایین، بدون نیاز به SafeArea
-    right: 20,
-    backgroundColor: '#3b82f6',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-  },
+  fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: '#3b82f6', width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', elevation: 5 },
   fabText: { fontSize: 28, color: '#fff', fontWeight: 'bold', lineHeight: 32 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContainer: { width: '85%', backgroundColor: '#fff', borderRadius: 24, padding: 20 },
