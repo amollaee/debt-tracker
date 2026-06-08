@@ -43,9 +43,14 @@ export default function PersonsScreen() {
   const exportData = async () => {
     setLoading(true);
     try {
+      // بررسی در دسترس بودن دایرکتوری سند
+      if (!FileSystem.documentDirectory) {
+        alert('فضای ذخیره‌سازی در دسترس نیست.');
+        return;
+      }
       const dataStr = JSON.stringify(persons, null, 2);
       const fileName = `debt_backup_${Date.now()}.json`;
-      const filePath = FileSystem.documentDirectory + fileName;
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
       await FileSystem.writeAsStringAsync(filePath, dataStr, { encoding: FileSystem.EncodingType.UTF8 });
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(filePath);
@@ -53,6 +58,7 @@ export default function PersonsScreen() {
         alert('اشتراک‌گذاری در این دستگاه پشتیبانی نمی‌شود');
       }
     } catch (error) {
+      console.error(error);
       alert('خطا در ایجاد فایل پشتیبان');
     } finally {
       setLoading(false);
@@ -238,7 +244,7 @@ const styles = StyleSheet.create({
   personCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    paddingHorizontal: 3,
+    paddingHorizontal: 15,
     paddingVertical:12,
     marginHorizontal: 12,
     marginBottom: 12,
