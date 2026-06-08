@@ -248,16 +248,16 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   personInfo: { flex: 1 },
-  personName: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', textAlign: 'right', marginBottom: 6 },
-  personStats: { fontSize: 15, color: '#555', textAlign: 'right', marginBottom: 4, fontWeight:600},
-  personBalance: { fontSize: 15, fontWeight: '600', textAlign: 'right' },
+  personName: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 6 },
+  personStats: { fontSize: 15, color: '#555', marginBottom: 4, fontWeight:600},
+  personBalance: { fontSize: 15, fontWeight: '600'},
   deleteButton: { padding: 8, marginLeft: 8 },
   deleteIcon: { fontSize: 20, color: '#ef4444' },
   positive: { color: '#10b981' },
   negative: { color: '#ef4444' },
   fab: {
     position: 'absolute',
-    bottom: 100,   // فاصله ثابت از پایین، بدون نیاز به SafeArea
+    bottom: 30,   // فاصله ثابت از پایین، بدون نیاز به SafeArea
     right: 20,
     backgroundColor: '#3b82f6',
     width: 56,

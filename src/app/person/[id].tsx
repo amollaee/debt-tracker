@@ -192,18 +192,16 @@ export default function PersonDetailsScreen() {
             delayLongPress={300}
           >
             <View style={styles.transLeft}>
-            <Text style={styles.transAmount}>{formatNumber(item.amount)}</Text>
-            <Text style={[styles.transType, item.type === 'debtor' ? styles.debtorText : styles.creditorText]}>
+              <Text style={[styles.transType, item.type === 'debtor' ? styles.debtorText : styles.creditorText]}>
                 {item.type === 'debtor' ? 'بدهکار' : 'بستانکار'}
               </Text>
-            </View>
-            <View style={styles.transRight}>
               <Text style={styles.transDesc}>{item.description}</Text>
               <Text style={styles.transDate}>
                 {formatTransactionDate(item.createdAt, item.updatedAt)}
               </Text>
             </View>
-            <View style={styles.transLeft}>
+            <View style={styles.transRight}>
+              <Text style={styles.transAmount}>{formatNumber(item.amount)}</Text>
               <TouchableOpacity onPress={() => openDeleteModal(item.id)} style={styles.deleteButton}>
                 <Text style={styles.deleteText}>🗑️</Text>
               </TouchableOpacity>
@@ -327,21 +325,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical:7,
     marginBottom: 8,
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   transLeft: { flex: 2 },
   transType: { fontSize: 12, fontWeight: 'bold', marginBottom: 4},
-  transDesc: { fontSize: 13, color: '#64748b', marginBottom: 2, width:180},
-  transDate: { fontSize: 12, color: '#947788' },
+  transDesc: { fontSize: 13, color: '#64748b', marginBottom: 2},
+  transDate: { fontSize: 12, color: '#947788', borderTopWidth:1, borderTopColor:'#eee', marginTop:2, paddingTop:2},
   transRight: { alignItems: 'flex-end', gap: 6 },
-  transAmount: { fontSize: 17, fontWeight: '600', color: '#1e293b', textAlign:'right'},
+  transAmount: { fontSize: 17, fontWeight: '600', color: '#1e293b'},
   deleteButton: { padding: 6 },
   deleteText: { fontSize: 18, color: '#ef4444' },
   fab: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 30,
     right: 20,
     backgroundColor: '#3b82f6',
     width: 56,
@@ -350,7 +348,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
-    writingDirection:'rtl'
   },
   fabText: { fontSize: 28, color: '#fff', fontWeight: 'bold', lineHeight: 32 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
