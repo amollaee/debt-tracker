@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   negative: { color: '#ef4444' },
   fab: {
     position: 'absolute',
-    bottom: 30,   // فاصله ثابت از پایین، بدون نیاز به SafeArea
+    bottom: 100,   // فاصله ثابت از پایین، بدون نیاز به SafeArea
     right: 20,
     backgroundColor: '#3b82f6',
     width: 56,
