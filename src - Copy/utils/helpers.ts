@@ -30,7 +30,7 @@ export const formatNumber = (num: number): string => {
   export const toPersianDate = (isoDate: string): string => {
     const date = new Date(isoDate);
     const formatted = new Intl.DateTimeFormat('fa-IR', {
-      year: 'numeric', month: '2-digit', day: 'numeric',
+      year: 'numeric', month: 'long', day: 'numeric',
       hour: '2-digit', minute: '2-digit'
     }).format(date);
     return toPersianDigits(formatted);
@@ -49,12 +49,4 @@ export const persianToDate = (persianStr: string): Date | null => {
   // گرفتن تاریخ امروز به فرمت YYYY-MM-DD
   export const todayISO = (): string => {
     return new Date().toISOString().split('T')[0];
-  };
-
-  // نمایش تاریخ ثبت و ویرایش به صورت خوانا
-export const formatTransactionDate = (createdAt: string, updatedAt?: string): string => {
-    const created = toPersianDate(createdAt);
-    if (!updatedAt) return `📅 ثبت: ${created}`;
-    const edited = toPersianDate(updatedAt);
-    return `📅 ثبت: ${created}  \n  ✏️ ویرایش: ${edited}`;
   };

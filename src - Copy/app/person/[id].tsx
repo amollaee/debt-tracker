@@ -1,6 +1,6 @@
 // app/persons/[id].tsx
 import { Transaction, useData } from '@/contexts/DataContext';
-import { formatNumber, formatTransactionDate, toEnglishNumber } from '@/utils/helpers';
+import { formatNumber, toEnglishNumber, toPersianDate } from '@/utils/helpers';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useLayoutEffect, useState } from 'react';
 import {
@@ -43,9 +43,10 @@ export default function PersonDetailsScreen() {
   }, [person, navigation]);
 
   // فیلتر تراکنش‌ها بر اساس توضیحات و بازه تاریخ
-  const filteredTransactions = person?.transactions
-  .filter(trans => {
+  const filteredTransactions = person?.transactions.filter(trans => {
+    // جستجوی متن در توضیحات
     if (searchText && !trans.description.includes(searchText)) return false;
+    // فیلتر تاریخ (ساده: مقایسه رشته‌ای YYYY-MM-DD)
     if (startDate) {
       const transDate = trans.createdAt.split('T')[0];
       if (transDate < startDate) return false;
@@ -55,8 +56,7 @@ export default function PersonDetailsScreen() {
       if (transDate > endDate) return false;
     }
     return true;
-  })
-  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }) || [];
 
 
   if (!person) {
@@ -183,7 +183,7 @@ export default function PersonDetailsScreen() {
       </View>
 
       <FlatList
-        data={filteredTransactions}
+        data={person.transactions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <Pressable
@@ -199,9 +199,7 @@ export default function PersonDetailsScreen() {
             </View>
             <View style={styles.transRight}>
               <Text style={styles.transDesc}>{item.description}</Text>
-              <Text style={styles.transDate}>
-                {formatTransactionDate(item.createdAt, item.updatedAt)}
-              </Text>
+              <Text style={styles.transDate}>{toPersianDate(item.createdAt)}</Text>
             </View>
             <View style={styles.transLeft}>
               <TouchableOpacity onPress={() => openDeleteModal(item.id)} style={styles.deleteButton}>
@@ -249,16 +247,12 @@ export default function PersonDetailsScreen() {
               </TouchableOpacity>
             </View>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={styles.input}
               placeholder="توضیحات (اختیاری)"
               value={description}
               onChangeText={setDescription}
               textAlign="right"
-              multiline
-              numberOfLines={5}
-              textAlignVertical="top"
             />
-
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelText}>لغو</Text>
@@ -375,10 +369,6 @@ const styles = StyleSheet.create({
   negative: { color: '#ef4444' },
   debtorText: { color: '#e11d48' },
   creditorText: { color: '#16a34a' },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
   // search
   filterContainer: {margin: 0 , padding: 3, borderRadius: 4 },
   searchInput: { borderWidth: 1, backgroundColor:'#FFF', color:'#999', borderColor: '#e2e8f0', borderRadius: 4, padding: 10, margin: 4, fontSize: 16, textAlign: 'right', writingDirection:'rtl' },
